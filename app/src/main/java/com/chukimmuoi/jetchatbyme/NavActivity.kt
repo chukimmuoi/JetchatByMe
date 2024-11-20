@@ -1,18 +1,25 @@
 package com.chukimmuoi.jetchatbyme
 
 import android.os.Bundle
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.chukimmuoi.jetchatbyme.ui.theme.JetchatByMeTheme
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.material3.DrawerValue.Closed
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.viewinterop.AndroidViewBinding
+import androidx.core.os.bundleOf
+import androidx.core.view.ViewCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
+import androidx.navigation.fragment.NavHostFragment
+import com.chukimmuoi.jetchatbyme.components.JetChatDrawer
+import com.chukimmuoi.jetchatbyme.databinding.ContentMainBinding
+import kotlinx.coroutines.launch
 
 /**
  * Dùng AppCompatActivity:
@@ -32,31 +39,52 @@ class NavActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            JetchatByMeTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+        ViewCompat.setOnApplyWindowInsetsListener(window.decorView) {_, insets -> insets}
+
+        setContentView(
+            ComposeView(this).apply {
+                consumeWindowInsets = false
+                setContent {
+                    val drawerState = rememberDrawerState(initialValue = Closed)
+                    val drawerOpen by viewModel.drawerShouldBeOpened.collectAsStateWithLifecycle()
+
+                    if (drawerOpen) {
+                        LaunchedEffect(Unit) {
+                            try {
+                                drawerState.open()
+                            } finally {
+                                viewModel.resetOpenDrawerAction()
+                            }
+                        }
+                    }
+                    val scope = rememberCoroutineScope()
+
+                    JetChatDrawer(
+                        drawerState = drawerState,
+                        onChatClicked = {
+                            findNavController().popBackStack(R.id.nav_home, false)
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        },
+                        onProfileClicked = {
+                            val bundle = bundleOf("userId" to it)
+                            findNavController().navigate(R.id.nav_profile, bundle)
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    ) {
+                        AndroidViewBinding(ContentMainBinding::inflate)
+                    }
                 }
             }
-        }
+        )
     }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    JetchatByMeTheme {
-        Greeting("Android")
+    private fun findNavController(): NavController {
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        return navHostFragment.navController
     }
 }
