@@ -7,7 +7,14 @@ import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import androidx.compose.ui.platform.ComposeView
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
+import androidx.navigation.findNavController
+import com.chukimmuoi.jetchatbyme.MainViewModel
+import com.chukimmuoi.jetchatbyme.R
+import com.chukimmuoi.jetchatbyme.data.exampleUiState
+import com.chukimmuoi.jetchatbyme.ui.theme.JetchatByMeTheme
 
 /**
  * @author: My Project
@@ -20,6 +27,8 @@ import androidx.fragment.app.Fragment
  */
 class ConversationFragment: Fragment() {
 
+    private val activityViewModel: MainViewModel by activityViewModels()
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -27,6 +36,23 @@ class ConversationFragment: Fragment() {
     ): View {
         return ComposeView(inflater.context).apply {
             layoutParams = LayoutParams(MATCH_PARENT, MATCH_PARENT)
+            setContent {
+                JetchatByMeTheme {
+                    ConversationContent(
+                        uiState = exampleUiState,
+                        navigateToProfile = { user ->
+                            val bundle = bundleOf("userId" to user)
+                            findNavController().navigate(
+                                R.id.nav_profile,
+                                bundle
+                            )
+                        },
+                        onNavIconPressed = {
+                            activityViewModel.openDrawer()
+                        }
+                    )
+                }
+            }
         }
     }
 }
