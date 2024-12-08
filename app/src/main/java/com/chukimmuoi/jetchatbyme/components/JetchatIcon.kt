@@ -29,7 +29,7 @@ fun JetchatIcon(
     contentDescription: String?
 ) {
     val semantics = if (contentDescription != null) {
-        modifier.semantics { //  Accessibility & Testing: https://developer.android.com/develop/ui/compose/accessibility/semantics
+        Modifier.semantics { //  Accessibility & Testing: https://developer.android.com/develop/ui/compose/accessibility/semantics
             this.contentDescription = contentDescription
             this.role = Role.Image
         }
